@@ -1,0 +1,1 @@
+int sem_create(int key, int value);

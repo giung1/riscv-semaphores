@@ -5,6 +5,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sems.h"
 
 uint64
 sys_exit(void)
@@ -88,4 +89,46 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint64
+sys_sem_create(void)
+{
+  int n;
+  int value;
+  argint(0, &n);
+  argint(1, &value);
+  return sem_create(n, value);
+}
+
+uint64
+sys_sem_get(void)
+{
+  int n;
+  argint(0, &n);
+  return sem_get(n);
+}
+
+uint64
+sys_sem_wait(void)
+{
+  int n;
+  argint(0, &n);
+  return sem_wait(n);
+}
+
+uint64
+sys_sem_signal(void)
+{
+  int n;
+  argint(0, &n);
+  return sem_signal(n);
+}
+
+uint64
+sys_sem_close(void)
+{
+  int n;
+  argint(0, &n);
+  return sem_close(n);
 }
