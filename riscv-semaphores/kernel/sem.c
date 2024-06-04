@@ -148,7 +148,7 @@ int sem_close(int semid){
 int static check_slotfree_osems(struct proc *p){
     int index_free = -1;
     for(int i = 0; i < NOSEMS; i++){
-        if(&p->osems[i] != 0){  //note that it does not matter if there is already a sem with the same key
+        if(&p->osems[i] == 0){  //note that it does not matter if there is already a sem with the same key
             int index_free = i;
         }
     }
