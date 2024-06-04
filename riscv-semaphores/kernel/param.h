@@ -11,5 +11,5 @@
 #define NBUF         (MAXOPBLOCKS*3)  // size of disk block cache
 #define FSSIZE       2000  // size of file system in blocks
 #define MAXPATH      128  // maximum file path name
-#define NOSEMS       10  // open sems per process
-#define NSEMS        128 // maximum number of semaphores
+#define NOSEM 16           // open semaphores per process
+#define NSEM 100           // open semaphores per system

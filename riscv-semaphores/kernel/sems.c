@@ -4,98 +4,123 @@
 #include "sleeplock.h"
 #include "spinlock.h"
 
-
 struct semaphore
 {
-    int value;
-    int id;
-    int refcount;
-    struct sleeplock slock;
     struct spinlock lock;
+    int value;
+    int key;
+    int refcount;
 };
 
-struct semaphore *semaphores[NSEMS];
+struct semaphore *sems[NSEM];
+
+void initsems(){
+    struct semaphore *sem;
+    for(int i = 0; i < NSEM; i++){
+      sem = sems[i];
+      initlock(&sem->lock, "semaphore");
+      sem->value = sem->refcount = 0;
+      sem->key = -1;
+    }
+}
+
+//no hace falta lock del proceso, el mismo esta running, nadie lo va a tocar, no hay race condition
+//agregar lock a la tabla de semaforos, no, no hace falta, lock por cada sem, como esta ahora
+//en exit hago close, un for igual que ofile
+//hacer buffer y ejemplo prod consm
+
+//parametrizar el recorrido que se hace sobre osems
+//create, primero se fija si esta lleno o no el osems
+//luego se fija la tabla, hacer todo en un solo for
 
 int sem_create(int key, int value){
     struct semaphore *sem;
     struct proc *p = myproc();
-    for(int i = 0; i < NSEMS; i++){
-        acquire(&semaphores[i]->lock);
-        sem = semaphores[i]; 
-        if (sem->id == key){
-            acquire(&p->lock);
-            for (int ns = 0; ns < NOSEMS; ns++){
-                if(!p->osems[ns]){
-                    sem->refcount++;
-                    p->osems[ns] = semaphores[i];
-                    release(&p->lock);
-                    release(&sem->lock);
-                    return ns;
-                }
-            }
-            release(&sem->lock);
-            release(&p->lock);
-            return -1;
+
+    for(int i = 0; i < NSEM; i++){
+        sem = sems[i];
+        if(sem->key == key){    //ya existe semaforo con esa key
+            return -1;          //ERROR
         }
-        release(&sem->lock);
     }
-    for(int i = 0; i < NSEMS; i++){
-        acquire(&semaphores[i]->lock);
-        sem = semaphores[i];
-        if(sem->refcount == 0 && sem->id == -1){
+    for(int i = 0; i < NSEM; i++){
+        sem = sems[i];
+        if(sem->key == -1){         //primer libre
+            acquire(&sem->lock);
+            sem->key = key;
+            sem->refcount++;
             sem->value = value;
-            sem->id = key;
-            sem->refcount = 0;
-            acquire(&p->lock);
-            for (int ns = 0; ns < NOSEMS; ns++){
-                if(!p->osems[ns]){
-                    sem->refcount++;
-                    p->osems[ns] = semaphores[i];
-                    release(&p->lock);
-                    release(&sem->lock);
-                    return ns;
-                }
-            }
-            release(&p->lock);
-        break;
+        }
+    }
+
+    int osemfull = 1;
+    int semid;
+    acquire(&p->lock);
+    for(int j = 0; j < NOSEM; j++){
+        if(p->osem[j] != 0){
+            semid = j;
+            osemfull = 0;
+        }
+    }
+    if(osemfull == 1){  //tengo que liberar sem en sems
+        sem->value = sem->refcount = 0;
+        sem->key = -1;
+        release(&p->lock);
         release(&sem->lock);
         return -1;
-        }
+    }else{
+        p->osem[semid] = sem;    //esta bien sem?, o deberia ser sems[i], no tiene alcance de ese i
+        release(&p->lock);
         release(&sem->lock);
+        return semid;
     }
-    return -1;
 }
 
 int sem_get(int key){
-    struct proc *p = myproc();
-    acquire(&p->lock);
-    for(int i = 0; i < NSEMS; i++){
-        acquire(&semaphores[i]->lock);
-        if(semaphores[i]->id == key){
-            for (int ns = 0; ns < NOSEMS; ns++){
-                if(!p->osems[ns]){
-                    semaphores[i]->refcount++;
-                    p->osems[ns] = semaphores[i];
-                }
-            }
-            release(&semaphores[i]->lock);
-            release(&p->lock);
-            return i;
+    struct semaphore *sem;  
+    struct proc *p = myproc(); 
+
+    int found = 0;
+    for(int i = 0; i < NSEM; i++){
+        if(sems[i]->key == key){
+            sem = sems[i];
+            acquire(&sem->lock);
+            found = 1;
         }
-        release(&semaphores[i]->lock);
     }
-    release(&p->lock);
-    return -1;
+
+    if(found == 1){
+        int osemfull = 1;
+        int semid;
+        acquire(&p->lock);
+        for(int j = 0; j < NOSEM; j++){ //notar que da lo mismo si ya tenia ese sem ya, hago uno nuevo con semid nuevo
+            if(p->osem[j] != 0){
+                semid = j;
+                osemfull = 0;
+            }
+        }
+        if(osemfull == 1){ 
+            return -1;
+        }else{
+            p->osem[semid] = sem;    //esta bien sem?, o deberia ser sems[i], no tiene alcance de ese i
+            sem->refcount++;
+            release(&p->lock);
+            release(&sem->lock);
+            return semid;
+        }
+    }else{
+        return -1;
+    }
 }
 
 int sem_wait(int sem){
-    if (sem < 0 || sem >= NOSEMS)
+    if (sem < 0 || sem >= NOSEM)
         return -1;
     struct proc *p = myproc();
     struct semaphore *s;
     acquire(&p->lock);
-    acquire(&p->osems[sem]->lock);
-    s = p->osems[sem];
+    acquire(&p->osem[sem]->lock);
+    s = p->osem[sem];
     if(s->value > 0){
         s->value--;
     } else {
@@ -106,18 +131,18 @@ int sem_wait(int sem){
 }
 
 int sem_signal(int sem){
-    if (sem < 0 || sem >= NOSEMS)
+    if (sem < 0 || sem >= NOSEM)
         return -1;
-    if (semaphores[sem]->refcount == 0)
+    if (sems[sem]->refcount == 0)
         return -1;
-    if (!semaphores[sem])
+    if (!sems[sem])
         return -1;
     struct proc *p = myproc();
     acquire(&p->lock);
     struct semaphore *s;
     
-    acquire(&p->osems[sem]->lock);
-    s = p->osems[sem];
+    acquire(&p->osem[sem]->lock);
+    s = p->osem[sem];
     s->value++;
     wakeup(s);
     release(&s->lock);
@@ -126,18 +151,18 @@ int sem_signal(int sem){
 }
 
 int sem_close(int sem){
-    if (sem < 0 || sem >= NOSEMS)
+    if (sem < 0 || sem >= NOSEM)
         return -1;
-    if (!semaphores[sem])
+    if (!sems[sem])
         return -1;
     struct proc *p = myproc();
     acquire(&p->lock);
     struct semaphore *s;
-    acquire(&p->osems[sem]->lock);
-    s = p->osems[sem];
+    acquire(&p->osem[sem]->lock);
+    s = p->osem[sem];
     s->refcount--;
     if(s->refcount == 0){
-        s->id = -1;
+        s->key = -1;
         s->value = 0;
     }
     release(&s->lock);
