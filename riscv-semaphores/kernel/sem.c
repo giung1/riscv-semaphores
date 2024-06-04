@@ -38,7 +38,7 @@ int sem_create(int key, int value){
             if(sem->refcount == 0 && sem->key != key){
                 acquire(&sem->lock);
                 sem->key = key;
-                sem->refcount++;
+                sem->refcount = 1;
                 sem->value = value;
 
                 p->osems[semid] = sem;
@@ -133,6 +133,7 @@ int sem_close(int semid){
         sem = p->osems[semid];
         acquire(&sem->lock);
         sem->refcount--;
+
         if(sem->refcount == 0){
             sem->value = 0;
             sem->key = -1;
