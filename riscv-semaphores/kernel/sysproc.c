@@ -98,7 +98,7 @@ sys_sem_create(void)
   int value;
   argint(0, &n);
   argint(1, &value);
-  return sem_create(n, value);
+  return semcreate(n, value);
 }
 
 uint64
@@ -106,7 +106,7 @@ sys_sem_get(void)
 {
   int n;
   argint(0, &n);
-  return sem_get(n);
+  return semget(n);
 }
 
 uint64
@@ -114,7 +114,7 @@ sys_sem_wait(void)
 {
   int n;
   argint(0, &n);
-  return sem_wait(n);
+  return semwait(n);
 }
 
 uint64
@@ -122,7 +122,7 @@ sys_sem_signal(void)
 {
   int n;
   argint(0, &n);
-  return sem_signal(n);
+  return semsignal(n);
 }
 
 uint64
@@ -130,5 +130,5 @@ sys_sem_close(void)
 {
   int n;
   argint(0, &n);
-  return sem_close(n);
+  return semclose(n);
 }
