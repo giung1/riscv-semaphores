@@ -133,13 +133,10 @@ int sem_close(int semid){
         sem = p->osems[semid];
         acquire(&sem->lock);
         sem->refcount--;
-        p->osems[semid] = 0;
-
         if(sem->refcount == 0){
             sem->value = 0;
             sem->key = -1;
         }
-
         release(&sem->lock);
         return 0;
     }
