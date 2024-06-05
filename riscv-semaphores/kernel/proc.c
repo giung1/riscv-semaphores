@@ -361,11 +361,11 @@ exit(int status)
   }
 
   // Close all open sems.
+
   for(int semid = 0; semid < NOSEMS; semid++){
-    if(p->osems[semid] != 0){
-      struct semaphore *sem = p->osems[semid]; 
+    if(p->osems[semid]){
       sem_close(semid);
-      p->osems[semid] = 0;
+      //p->osems[semid] = 0;
     }
   }
 

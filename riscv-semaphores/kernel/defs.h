@@ -186,7 +186,13 @@ void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
 
 //sem.c
-void            initsems(void);
+void            seminit(void);
+int             sem_create(int, int);
+int             sem_get(int);
+int             sem_wait(int);
+int             sem_signal(int);
+int             sem_close(int);
+
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

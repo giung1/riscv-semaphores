@@ -29,7 +29,7 @@ main()
     fileinit();      // file table
     virtio_disk_init(); // emulated hard disk
     userinit();      // first user process
-    initsems();      // init sems table
+    seminit();      // init sems table
     __sync_synchronize();
     started = 1;
   } else {
