@@ -2,9 +2,7 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-
-
-int main() {    
+int main(){    
     int sempadre = sem_create(10, 1);
     int pid = fork();
 
@@ -40,6 +38,5 @@ int main() {
         // Wait for child process to finish
         wait(0);
     }
-
     return 0;
 }
