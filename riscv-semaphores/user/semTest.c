@@ -3,7 +3,7 @@
 #include "user/user.h"
 
 int main(){    
-    int sempadre = sem_create(10, 1);
+    int semparent = sem_create(10, 1);
     int pid = fork();
 
     if (pid == -1) {
@@ -12,29 +12,29 @@ int main(){
     } else if (pid == 0) {
         // Child process
         int h = 0;
-        int semhijo = sem_get(10);
-        printf("semhijo: %d\n", semhijo);
-        if (semhijo == -1 || semhijo == -2) {
+        int semchild = sem_get(10);
+        printf("semchild: %d\n", semchild);
+        if (semchild == -1) {
             printf("Failed to get semaphore");
             return 1;
         }
-
         while (h < 10) {
-            sem_wait(semhijo);
-            printf("Entre a la region critica y soy hijo, ciclo %d \n", h);
-            sem_signal(semhijo);
+            sem_wait(semchild);
+            printf("Child entered the critical region Iteration: %d\n", h);
+            sem_signal(semchild);
+            printf("Child left the critical region Iteration: %d\n", h);
             h++;
         }
     } else {
         // Parent process
         int i = 0;
         while (i < 10) {
-            sem_wait(sempadre);
-            printf("Entre a la region critica y soy padre, ciclo %d \n", i);
-            sem_signal(sempadre);
+            sem_wait(semparent);
+            printf("Parent entered the critical region Iteration: %d\n", i);
+            sem_signal(semparent);
+            printf("Parent left the critical region Iteration: %d\n", i);
             i++;
         }
-
         // Wait for child process to finish
         wait(0);
     }
