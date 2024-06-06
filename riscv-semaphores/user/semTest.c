@@ -21,8 +21,8 @@ int main(){
         while (h < 10) {
             sem_wait(semchild);
             printf("Child entered the critical region Iteration: %d\n", h);
+            printf("Child left the critical region Iteration: %d\n", h);            
             sem_signal(semchild);
-            printf("Child left the critical region Iteration: %d\n", h);
             h++;
         }
     } else {
@@ -31,8 +31,8 @@ int main(){
         while (i < 10) {
             sem_wait(semparent);
             printf("Parent entered the critical region Iteration: %d\n", i);
-            sem_signal(semparent);
             printf("Parent left the critical region Iteration: %d\n", i);
+            sem_signal(semparent);
             i++;
         }
         // Wait for child process to finish
