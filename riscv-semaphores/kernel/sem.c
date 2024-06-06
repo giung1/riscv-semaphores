@@ -71,7 +71,6 @@ int sem_create(int key, int value){
     return -1;
 }
 
-
 int sem_get(int key){
     struct semaphore *sem;
     struct proc *p = myproc();
@@ -112,7 +111,6 @@ int sem_wait(int semid) {
 
     while(sem->value <= 0){
         sleep(sem, &sem->lock);
-        //acquire(&sem->lock); 
     }
     sem->value--;
 
